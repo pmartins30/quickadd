@@ -49,17 +49,25 @@ async function start(params, settings) {
         selectedShow = await getByImdbId(choice.imdbID);
     }
 
-    QuickAdd.variables = {
-        ...selectedShow,
-        imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
-        Released: formatDateString(selectedShow.Released),
-        actorLinks: linkifyList(selectedShow.Actors.split(",")),
-        genreLinks: linkifyList(selectedShow.Genre.split(",")),
-        directorLink: linkifyList(selectedShow.Director.split(",")),
-        fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
-        typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
-        languageLower: selectedShow.Language.toLowerCase(),
-    }
+QuickAdd.variables = {
+    ...selectedShow,
+    imdbRating: (selectedShow.imdbRating && selectedShow.imdbRating !== "N/A")
+        ? selectedShow.imdbRating.toString()
+        : "N/A",
+    Year: selectedShow.Year?.toString() ?? "Unknown",
+    Runtime: (selectedShow.Runtime && selectedShow.Runtime !== "N/A")
+        ? selectedShow.Runtime.toString()
+        : "N/A",
+    imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
+    Released: formatDateString(selectedShow.Released),
+    actorLinks: linkifyList(selectedShow.Actors.split(",")),
+    genreLinks: linkifyList(selectedShow.Genre.split(",")),
+    directorLink: linkifyList(selectedShow.Director.split(",")),
+    fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
+    typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
+    languageLower: selectedShow.Language?.toLowerCase() ?? "",
+}
+
 }
 
 function isImdbId(str) {
@@ -112,14 +120,17 @@ async function getByImdbId(id) {
 }
 
 function linkifyList(list) {
-    if (list.length === 0) return "";
-    if (list.length === 1) return `\n  - "[[${list[0]}]]"`;
+    if (!list || typeof list === "string") {
+        list = list?.split(",") || [];
+    }
 
+    if (list.length === 0) return "";
     return list.map(item => `\n  - "[[${item.trim()}]]"`).join("");
 }
 
+
 function replaceIllegalFileNameCharactersInString(string) {
-    return string.replace(/[\\,#%&\{\}\/*<>$\'\":@]*/g, '');
+    return string.replace(/[\\/:*?"<>|]/g, '-').trim();
 }
 
 async function apiGet(url, data) {
