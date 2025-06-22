@@ -27,16 +27,24 @@ async function start(params, settings) {
     QuickAdd = params;
     Settings = settings;
 
-    const query = await QuickAdd.quickAddApi.inputPrompt("Enter movie title or IMDB ID: ");
+    const query = await QuickAdd.quickAddApi.inputPrompt("Enter movie title, IMDb ID, or IMDb URL: ");
     if (!query) {
         notice("No query entered.");
         throw new Error("No query entered.");
     }
 
     let selectedShow;
+    let imdbId = null;
 
-    if (isImdbId(query)) {
-        selectedShow = await getByImdbId(query);
+    // Handle IMDb URL or ID
+    if (query.startsWith("http")) {
+        imdbId = extractImdbIdFromUrl(query);
+    } else if (isImdbId(query)) {
+        imdbId = query;
+    }
+
+    if (imdbId) {
+        selectedShow = await getByImdbId(imdbId);
     } else {
         const results = await getByQuery(query);
 
@@ -49,29 +57,33 @@ async function start(params, settings) {
         selectedShow = await getByImdbId(choice.imdbID);
     }
 
-QuickAdd.variables = {
-    ...selectedShow,
-    imdbRating: (selectedShow.imdbRating && selectedShow.imdbRating !== "N/A")
-        ? selectedShow.imdbRating.toString()
-        : "N/A",
-    Year: selectedShow.Year?.toString() ?? "Unknown",
-    Runtime: (selectedShow.Runtime && selectedShow.Runtime !== "N/A")
-        ? selectedShow.Runtime.toString()
-        : "N/A",
-    imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
-    Released: formatDateString(selectedShow.Released),
-    actorLinks: linkifyList(selectedShow.Actors.split(",")),
-    genreLinks: linkifyList(selectedShow.Genre.split(",")),
-    directorLink: linkifyList(selectedShow.Director.split(",")),
-    fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
-    typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
-    languageLower: selectedShow.Language?.toLowerCase() ?? "",
-}
-
+    QuickAdd.variables = {
+        ...selectedShow,
+        imdbRating: (selectedShow.imdbRating && selectedShow.imdbRating !== "N/A")
+            ? selectedShow.imdbRating.toString()
+            : "N/A",
+        Year: selectedShow.Year?.toString() ?? "Unknown",
+        Runtime: (selectedShow.Runtime && selectedShow.Runtime !== "N/A")
+            ? selectedShow.Runtime.toString()
+            : "N/A",
+        imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
+        Released: formatDateString(selectedShow.Released),
+        actorLinks: linkifyList(selectedShow.Actors.split(",")),
+        genreLinks: linkifyList(selectedShow.Genre.split(",")),
+        directorLink: linkifyList(selectedShow.Director.split(",")),
+        fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
+        typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
+        languageLower: selectedShow.Language?.toLowerCase() ?? "",
+    }
 }
 
 function isImdbId(str) {
     return /^tt\d+$/.test(str);
+}
+
+function extractImdbIdFromUrl(url) {
+    const match = url.match(/tt\d{7,}/);
+    return match ? match[0] : null;
 }
 
 function formatTitleForSuggestion(resultItem) {
@@ -127,7 +139,6 @@ function linkifyList(list) {
     if (list.length === 0) return "";
     return list.map(item => `\n  - "[[${item.trim()}]]"`).join("");
 }
-
 
 function replaceIllegalFileNameCharactersInString(string) {
     return string.replace(/[\\/:*?"<>|]/g, '-').trim();
