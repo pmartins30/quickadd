@@ -57,24 +57,38 @@ async function start(params, settings) {
         selectedShow = await getByImdbId(choice.imdbID);
     }
 
-    QuickAdd.variables = {
-        ...selectedShow,
-        imdbRating: (selectedShow.imdbRating && selectedShow.imdbRating !== "N/A")
-            ? selectedShow.imdbRating.toString()
-            : "N/A",
-        Year: selectedShow.Year?.toString() ?? "Unknown",
-        Runtime: (selectedShow.Runtime && selectedShow.Runtime !== "N/A")
-            ? selectedShow.Runtime.toString()
-            : "N/A",
-        imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
-        Released: formatDateString(selectedShow.Released),
-        actorLinks: linkifyList(selectedShow.Actors.split(",")),
-        genreLinks: linkifyList(selectedShow.Genre.split(",")),
-        directorLink: linkifyList(selectedShow.Director.split(",")),
-        fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
-        typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
-        languageLower: selectedShow.Language?.toLowerCase() ?? "",
-    }
+// Função para pegar a data atual formatada yyyy-mm-dd
+function getTodayDateFormatted() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Dentro da função start, após obter selectedShow, defina as variáveis:
+
+QuickAdd.variables = {
+  ...selectedShow,
+  imdbRating:
+    selectedShow.imdbRating && selectedShow.imdbRating !== "N/A"
+      ? selectedShow.imdbRating.toString()
+      : "N/A",
+  Year: selectedShow.Year?.toString() ?? "Unknown",
+  Runtime:
+    selectedShow.Runtime && selectedShow.Runtime !== "N/A"
+      ? selectedShow.Runtime.toString()
+      : "N/A",
+  imdbUrl: IMDB_BASE_URL + selectedShow.imdbID,
+  Released: formatDateString(selectedShow.Released),
+  actorLinks: linkifyList(selectedShow.Actors.split(",")),
+  genreLinks: linkifyList(selectedShow.Genre.split(",")),
+  directorLink: linkifyList(selectedShow.Director.split(",")),
+  fileName: replaceIllegalFileNameCharactersInString(selectedShow.Title),
+  typeLink: `[[${selectedShow.Type === "movie" ? "Movies" : "Series"}]]`,
+  languageLower: selectedShow.Language?.toLowerCase() ?? "",
+  dateAdded: getTodayDateFormatted(),  // <-- aqui a data atual
+};
 }
 
 function isImdbId(str) {
